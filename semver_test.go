@@ -126,6 +126,12 @@ func TestSatisfies(t *testing.T) {
 		{"1.0.0-beta", ">=1.0.0", false},    // prerelease ranks below the release it precedes
 		{"1.0.0-beta", ">=1.0.0-alpha", true},
 		{"1.0.0", ">1.0.0-rc.1", true},
+		{"0.9.0", "<1.0.0 || >=2.0.0", true},
+		{"1.5.0", "<1.0.0 || >=2.0.0", false},
+		{"2.5.0", "<1.0.0 || >=2.0.0", true},
+		{"1.2.3", "=1.2.3 || =4.5.6", true},
+		{"4.5.6", "=1.2.3 || =4.5.6", true},
+		{"7.0.0", "=1.2.3 || =4.5.6", false},
 	}
 	for _, c := range cases {
 		v := mustParse(t, c.version)
@@ -147,6 +153,10 @@ func TestParseConstraintInvalid(t *testing.T) {
 		"not-a-version",
 		">=",
 		">=1.2.3-",
+		"||",
+		"1.2.3 ||",
+		"|| 1.2.3",
+		"1.2.3 || not-a-version",
 	}
 	for _, in := range cases {
 		if _, err := ParseConstraint(in); err == nil {

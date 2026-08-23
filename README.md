@@ -33,15 +33,15 @@ constraint, `1` if it doesn't, `2` if either argument fails to parse.
 
 A constraint is one or more comparator terms separated by spaces, all of
 which must hold (AND). Supported comparators: `=`, `>`, `>=`, `<`, `<=`. A
-bare version with no operator is shorthand for `=`.
+bare version with no operator is shorthand for `=`. Groups of AND terms can
+be separated by `||`, and the constraint holds if any group does (OR).
 
 ```
-1.2.3              exactly 1.2.3
->=1.2.3            1.2.3 or newer
->=1.2.3 <2.0.0     1.2.3 up to, but not including, 2.0.0
+1.2.3                          exactly 1.2.3
+>=1.2.3                        1.2.3 or newer
+>=1.2.3 <2.0.0                 1.2.3 up to, but not including, 2.0.0
+<1.0.0 || >=2.0.0              anything except the 1.x line
 ```
-
-There's no `||` (OR) support yet — see the roadmap below.
 
 ### version syntax
 
