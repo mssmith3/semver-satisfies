@@ -21,6 +21,7 @@ var comparatorOps = []string{">=", "<=", ">", "<", "="}
 // ParseConstraint parses one or more "||" separated groups of whitespace
 // separated comparators. Within a group all comparators must hold (AND);
 // across groups only one needs to (OR). "1.2.3" is shorthand for "=1.2.3".
+// "^1.2.3" and "~1.2.3" are shorthand for a ">= / <" pair; see expandRange.
 func ParseConstraint(s string) (Constraint, error) {
 	groups := strings.Split(s, "||")
 	out := make(Constraint, 0, len(groups))
@@ -31,6 +32,15 @@ func ParseConstraint(s string) (Constraint, error) {
 		}
 		cs := make([]Comparator, 0, len(fields))
 		for _, f := range fields {
+			if f[0] == '^' || f[0] == '~' {
+				v, err := ParseVersion(f[1:])
+				if err != nil {
+					return nil, fmt.Errorf("invalid constraint term %q: %w", f, err)
+				}
+				lo, hi := expandRange(f[0], v)
+				cs = append(cs, lo, hi)
+				continue
+			}
 			op, rest := splitOp(f)
 			v, err := ParseVersion(rest)
 			if err != nil {
@@ -41,6 +51,27 @@ func ParseConstraint(s string) (Constraint, error) {
 		out = append(out, cs)
 	}
 	return out, nil
+}
+
+// expandRange turns a caret ('^') or tilde ('~') shorthand into an explicit
+// ">= lower" / "< upper" pair. Caret allows changes that don't touch the
+// leftmost nonzero component (so a 0.x release is treated as unstable and
+// gets a narrower range than a 1.x one); tilde always pins major and minor.
+func expandRange(kind byte, v Version) (lo, hi Comparator) {
+	lo = Comparator{Op: ">=", Ver: v}
+	var upper Version
+	switch {
+	case kind == '~':
+		upper = Version{Major: v.Major, Minor: v.Minor + 1}
+	case v.Major > 0:
+		upper = Version{Major: v.Major + 1}
+	case v.Minor > 0:
+		upper = Version{Minor: v.Minor + 1}
+	default:
+		upper = Version{Patch: v.Patch + 1}
+	}
+	hi = Comparator{Op: "<", Ver: upper}
+	return lo, hi
 }
 
 func splitOp(f string) (op, rest string) {

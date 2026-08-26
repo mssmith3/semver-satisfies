@@ -43,6 +43,23 @@ be separated by `||`, and the constraint holds if any group does (OR).
 <1.0.0 || >=2.0.0              anything except the 1.x line
 ```
 
+`^` and `~` are shorthand for an `>=` / `<` pair, expanded before matching.
+`^1.2.3` means "compatible with 1.2.3" — it allows anything up to the next
+major version, except below `1.0.0` where a `0.x` release is treated as
+unstable and the allowed range narrows to match (`^0.2.3` stays within
+`0.2.x`, `^0.0.3` pins the patch too). `~1.2.3` is narrower and always pins
+major and minor, allowing only patch-level changes.
+
+```
+^1.2.3                         >=1.2.3 <2.0.0
+^0.2.3                         >=0.2.3 <0.3.0
+^0.0.3                         >=0.0.3 <0.0.4
+~1.2.3                         >=1.2.3 <1.3.0
+```
+
+Both require a full `MAJOR.MINOR.PATCH` version after the prefix; partial
+versions like `^1.2` aren't supported.
+
 ### version syntax
 
 Versions follow [semver.org 2.0.0](https://semver.org/). A leading `v` or

@@ -132,6 +132,17 @@ func TestSatisfies(t *testing.T) {
 		{"1.2.3", "=1.2.3 || =4.5.6", true},
 		{"4.5.6", "=1.2.3 || =4.5.6", true},
 		{"7.0.0", "=1.2.3 || =4.5.6", false},
+		{"1.2.3", "^1.2.3", true},
+		{"1.9.9", "^1.2.3", true},
+		{"1.2.2", "^1.2.3", false}, // caret has an inclusive lower bound
+		{"2.0.0", "^1.2.3", false}, // caret never crosses a major bump
+		{"0.2.5", "^0.2.3", true},  // 0.x: caret pins the minor instead
+		{"0.3.0", "^0.2.3", false},
+		{"0.0.4", "^0.0.3", false}, // 0.0.x: caret pins the patch too
+		{"0.0.3", "^0.0.3", true},
+		{"1.2.4", "~1.2.3", true},
+		{"1.3.0", "~1.2.3", false}, // tilde never crosses a minor bump
+		{"1.2.2", "~1.2.3", false},
 	}
 	for _, c := range cases {
 		v := mustParse(t, c.version)
@@ -157,6 +168,8 @@ func TestParseConstraintInvalid(t *testing.T) {
 		"1.2.3 ||",
 		"|| 1.2.3",
 		"1.2.3 || not-a-version",
+		"^not-a-version",
+		"~1.2",
 	}
 	for _, in := range cases {
 		if _, err := ParseConstraint(in); err == nil {
