@@ -29,6 +29,20 @@ false
 The exit code mirrors the answer: `0` if the version satisfies the
 constraint, `1` if it doesn't, `2` if either argument fails to parse.
 
+### highest match
+
+```
+$ go run . highest ">=1.0.0 <2.0.0" 1.2.3 1.9.9 2.0.0 1.0.0-beta
+1.9.9
+
+$ go run . highest ">=3.0.0" 1.2.3 1.9.9
+none
+```
+
+Prints the highest of a list of versions that satisfies the constraint, or
+`none` if no version in the list does. Exit code `0` on a match, `1` if
+none matched, `2` if any argument fails to parse.
+
 ### constraint syntax
 
 A constraint is one or more comparator terms separated by spaces, all of

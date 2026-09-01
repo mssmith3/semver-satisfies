@@ -94,6 +94,21 @@ func Satisfies(v Version, c Constraint) bool {
 	return false
 }
 
+// HighestMatch returns the highest of versions that satisfies c. ok is false
+// if none of them do, in which case the returned Version is meaningless.
+func HighestMatch(versions []Version, c Constraint) (best Version, ok bool) {
+	for _, v := range versions {
+		if !Satisfies(v, c) {
+			continue
+		}
+		if !ok || Compare(v, best) > 0 {
+			best = v
+			ok = true
+		}
+	}
+	return best, ok
+}
+
 func satisfiesGroup(v Version, cs []Comparator) bool {
 	for _, c := range cs {
 		cmp := Compare(v, c.Ver)

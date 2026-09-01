@@ -157,6 +157,47 @@ func TestSatisfies(t *testing.T) {
 	}
 }
 
+func TestHighestMatch(t *testing.T) {
+	in := []string{"1.0.0", "1.2.3", "1.9.9", "2.0.0", "1.5.0-beta"}
+	versions := make([]Version, len(in))
+	for i, s := range in {
+		versions[i] = mustParse(t, s)
+	}
+	cs, err := ParseConstraint("^1.0.0")
+	if err != nil {
+		t.Fatalf("ParseConstraint unexpected error: %v", err)
+	}
+
+	best, ok := HighestMatch(versions, cs)
+	if !ok {
+		t.Fatal("HighestMatch found no match, want one")
+	}
+	if want := "1.9.9"; best.String() != want {
+		t.Errorf("HighestMatch = %s, want %s", best, want)
+	}
+}
+
+func TestHighestMatchNoMatch(t *testing.T) {
+	versions := []Version{mustParse(t, "1.0.0"), mustParse(t, "1.5.0")}
+	cs, err := ParseConstraint(">=2.0.0")
+	if err != nil {
+		t.Fatalf("ParseConstraint unexpected error: %v", err)
+	}
+	if _, ok := HighestMatch(versions, cs); ok {
+		t.Error("HighestMatch found a match, want none")
+	}
+}
+
+func TestHighestMatchEmptyList(t *testing.T) {
+	cs, err := ParseConstraint(">=1.0.0")
+	if err != nil {
+		t.Fatalf("ParseConstraint unexpected error: %v", err)
+	}
+	if _, ok := HighestMatch(nil, cs); ok {
+		t.Error("HighestMatch on empty list found a match, want none")
+	}
+}
+
 func TestParseConstraintInvalid(t *testing.T) {
 	cases := []string{
 		"",
