@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"semver-satisfies/internal/semver"
 )
 
 func main() {
@@ -26,19 +28,19 @@ func runCheck(args []string) {
 		os.Exit(2)
 	}
 
-	v, err := ParseVersion(args[0])
+	v, err := semver.ParseVersion(args[0])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 
-	cs, err := ParseConstraint(args[1])
+	cs, err := semver.ParseConstraint(args[1])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 
-	if Satisfies(v, cs) {
+	if semver.Satisfies(v, cs) {
 		fmt.Println("true")
 		os.Exit(0)
 	}
@@ -54,15 +56,15 @@ func runHighest(args []string) {
 		os.Exit(2)
 	}
 
-	cs, err := ParseConstraint(args[0])
+	cs, err := semver.ParseConstraint(args[0])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 
-	versions := make([]Version, len(args)-1)
+	versions := make([]semver.Version, len(args)-1)
 	for i, a := range args[1:] {
-		v, err := ParseVersion(a)
+		v, err := semver.ParseVersion(a)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(2)
@@ -70,7 +72,7 @@ func runHighest(args []string) {
 		versions[i] = v
 	}
 
-	best, ok := HighestMatch(versions, cs)
+	best, ok := semver.HighestMatch(versions, cs)
 	if !ok {
 		fmt.Println("none")
 		os.Exit(1)
