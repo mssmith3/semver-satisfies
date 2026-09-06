@@ -198,6 +198,60 @@ func TestHighestMatchEmptyList(t *testing.T) {
 	}
 }
 
+// FuzzParseVersion checks that ParseVersion never panics and that any
+// version it accepts round-trips: String() must reparse to an equal
+// version. That catches formatting bugs (wrong separators, dropped
+// identifiers) that the table tests above wouldn't stumble onto.
+func FuzzParseVersion(f *testing.F) {
+	seeds := []string{
+		"1.2.3",
+		"v1.2.3",
+		"V1.2.3",
+		"0.0.0",
+		"1.0.0-alpha",
+		"1.0.0-alpha.1",
+		"1.0.0-0.3.7",
+		"1.0.0+20130313144700",
+		"1.0.0-beta+exp.sha.5114f85",
+		"1.0.0+21AF26D3---117B344092BD",
+		"",
+		"1",
+		"1.2",
+		"1.2.3.4",
+		"01.2.3",
+		"1.2.3-",
+		"1.2.3-01",
+		"1.2.3-alpha_beta",
+		"1.2.3-alpha..1",
+		"1.2.3+",
+		"-1.2.3",
+		"1.a.3",
+		"abc",
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+
+	f.Fuzz(func(t *testing.T, s string) {
+		v, err := ParseVersion(s)
+		if err != nil {
+			return
+		}
+
+		out := v.String()
+		v2, err2 := ParseVersion(out)
+		if err2 != nil {
+			t.Fatalf("ParseVersion(%q) = %+v, but reparsing its String() %q failed: %v", s, v, out, err2)
+		}
+		if Compare(v, v2) != 0 {
+			t.Fatalf("round-trip changed precedence: ParseVersion(%q) = %+v, String() = %q, reparsed = %+v", s, v, out, v2)
+		}
+		if out != v2.String() {
+			t.Fatalf("round-trip not stable: %q -> %q -> %q", s, out, v2.String())
+		}
+	})
+}
+
 func TestParseConstraintInvalid(t *testing.T) {
 	cases := []string{
 		"",
