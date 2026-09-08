@@ -272,3 +272,69 @@ func TestParseConstraintInvalid(t *testing.T) {
 		}
 	}
 }
+
+// FuzzParseConstraint checks that ParseConstraint never panics, and that
+// whatever it accepts is a well-formed Constraint: no empty OR group, no
+// empty AND group within it, and only the operators ParseConstraint itself
+// hands out. It also feeds the result to Satisfies, since that's the only
+// other place a malformed Comparator could blow up.
+func FuzzParseConstraint(f *testing.F) {
+	seeds := []string{
+		"1.2.3",
+		">=1.0.0 <2.0.0",
+		"<1.0.0 || >=2.0.0",
+		"^1.2.3",
+		"~1.2.3",
+		"^0.2.3",
+		"^0.0.3",
+		"=1.2.3 || =4.5.6",
+		"",
+		"   ",
+		"not-a-version",
+		">=",
+		">=1.2.3-",
+		"||",
+		"1.2.3 ||",
+		"|| 1.2.3",
+		"1.2.3 || not-a-version",
+		"^not-a-version",
+		"~1.2",
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+
+	probe := mustParseVersion(f, "1.2.3")
+
+	f.Fuzz(func(t *testing.T, s string) {
+		cs, err := ParseConstraint(s)
+		if err != nil {
+			return
+		}
+		if len(cs) == 0 {
+			t.Fatalf("ParseConstraint(%q) returned no error but an empty constraint", s)
+		}
+		for _, group := range cs {
+			if len(group) == 0 {
+				t.Fatalf("ParseConstraint(%q) produced an empty AND group", s)
+			}
+			for _, c := range group {
+				switch c.Op {
+				case "", "=", ">", ">=", "<", "<=":
+				default:
+					t.Fatalf("ParseConstraint(%q) produced comparator with invalid op %q", s, c.Op)
+				}
+			}
+		}
+		Satisfies(probe, cs)
+	})
+}
+
+func mustParseVersion(f *testing.F, s string) Version {
+	f.Helper()
+	v, err := ParseVersion(s)
+	if err != nil {
+		f.Fatalf("ParseVersion(%q) unexpected error: %v", s, err)
+	}
+	return v
+}
